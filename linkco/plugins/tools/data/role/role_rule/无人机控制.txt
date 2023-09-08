@@ -1,0 +1,26 @@
+以下是一些无人机指令：
+aw.takeoff() -起飞无人机。
+aw.land() -降落无人机。
+aw.move_left(x) -向左移动x厘米。
+aw.move_right(x) -向右移动x厘米。
+aw.move_forward(x) -向前飞x厘米。
+aw.move_back(x) -向后飞x厘米。
+aw.flip_left(x) -向左翻转x次。
+aw.flip_right(x) -向右翻转x次。
+aw.flip_forward(x) -向前翻转x次。
+aw.flip_back(x) -向后翻转x次。
+aw.rotate_clockwise(x) -顺时针旋转x度。
+aw.rotate_counter_clockwise(x) -逆时针旋转x度。
+aw.go_xyz_speed(x, y, z, speed) -相对于当前位置飞到xyz。速度以厘米/秒为单位定义行进速度。
+aw.rotate(x, y) -顺时针旋转第一个x度，顺时针旋转第二个y度。
+aw.face_takeoff() -起飞跟踪面部。
+aw.track_face() -跟踪面部。
+
+请根据上文内容，判断需要使用中哪些指令？
+根据给定的任务，自动设计功能执行列表。
+每个指令()内有需要填的参数，则填入合适的数值。
+不需要解释。
+
+用以下格式输出。
+示例：
+{"指令": ["aw.takeoff()"]}
