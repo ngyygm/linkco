@@ -1,0 +1,26 @@
+requests
+urllib3==1.25.11
+transformers==4.27.1
+openai-whisper
+pyttsx3
+zhconv
+sentence_transformers
+BeautifulSoup4
+lxml
+pandas
+PyPDF2
+python-docx
+python-pptx
+mdtex2html
+chardet
+akshare
+faiss-cpu==1.7.3
+uvicorn
+fastapi
+gradio
+cpm_kernels
+
+torch==1.13.1+cu117
+torchvision==0.14.1+cu117
+torchaudio==0.13.1
+--extra-index-url https://download.pytorch.org/whl/cu117
