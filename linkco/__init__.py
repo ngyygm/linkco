@@ -16,14 +16,8 @@ from .function.news import (
     func_news_WriteByDB
 )
 from .function.chat import func_chat_SmartChat
-from .function.drones import func_drones_CommandControl
-
-from .plugins.llm import (
-    llm_giiso,
-    llm_glm6b,
-    llm_glm26b,
-    llm_vglm6b,
-    llm_openai,
+from .function.drones import (
+    func_drones_CommandControl,
 )
 
 from .plugins.llm.main import init_llm_model, get_chat
@@ -45,7 +39,8 @@ from .plugins.utils.utils_data import (
     save_data,
     get_hash,
     get_remove_noun,
-    get_text_split
+    get_text_split,
+    get_response_json_clean
 )
 from .plugins.utils.utils_voice import (
     init_v2t_model,
@@ -68,6 +63,7 @@ from .plugins.utils.utils_vector import (
     delete_vector,
     save_vector_to_database,
     load_vector_database,
+    merge_database,
     create_vector_database,
     search_from_vector_database,
 )
@@ -98,5 +94,6 @@ from .plugins.utils.utils_file import (
     read_txt_file,
     read_docx_file,
     read_pptx_file,
-    read_file
+    read_file,
+    get_linkco_json
 )
