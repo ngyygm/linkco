@@ -105,7 +105,6 @@ def get_chat(prompt,
     return response
 
 
-
 # 获取大模型结果
 def get_stream_chat(prompt,
              history=None,
@@ -134,35 +133,32 @@ def get_stream_chat(prompt,
 
     if llm_module[model_nickname]['config']['image']:
         # try:
-        response = llm_module[model_nickname]['module'].get_chat(prompt=prompt,
-                                                                history=history,
-                                                                system=system,
-                                                                image_path=image_path,
-                                                                max_length=max_length,
-                                                                top_p=top_p,
-                                                                temperature=temperature,
-                                                                num_beams=num_beams,
-                                                                do_sample=do_sample)
+        for response in llm_module[model_nickname]['module'].get_stream_chat(prompt=prompt,
+                                                                             history=history,
+                                                                             system=system,
+                                                                             image_path=image_path,
+                                                                             max_length=max_length,
+                                                                             top_p=top_p,
+                                                                             temperature=temperature,
+                                                                             num_beams=num_beams,
+                                                                             do_sample=do_sample):
+            yield response
         # except:
         #     response = '内容读取错误啦~要不换个试试？'
     else:
         if len(prompt) > 0:
-            response = llm_module[model_nickname]['module'].get_chat(prompt=prompt,
-                                                            history=history,
-                                                            system=system,
-                                                            max_length=max_length,
-                                                            top_p=top_p,
-                                                            temperature=temperature,
-                                                            num_beams=num_beams,
-                                                            do_sample=do_sample)
+            for response in llm_module[model_nickname]['module'].get_stream_chat(prompt=prompt,
+                                                                                 history=history,
+                                                                                 system=system,
+                                                                                 max_length=max_length,
+                                                                                 top_p=top_p,
+                                                                                 temperature=temperature,
+                                                                                 num_beams=num_beams,
+                                                                                 do_sample=do_sample):
+                yield response
         else:
             response = '当前模型输入为空'
-
-    # print('【问题】\n', prompt)
-    # print('【回答】\n', response)
-    # print('======================================================')
-    return response
-
+            yield response
 
 
 def get_example_chat(prompt,

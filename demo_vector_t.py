@@ -67,5 +67,10 @@ if __name__ == '__main__':
         print(it)
         print('---------------------------')
 
+    # 保存向量
+    new_database_path = "linkco_data/vector_database/news_db_1010"
+    linkco.save_vector_to_database(database_result, new_database_path)
+    print('\n\n====================保存向量===================')
+
 
 

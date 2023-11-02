@@ -5,17 +5,16 @@ import json
 from .main import setting
 from ..utils import utils_prompt
 
+
 defult_device = 'cuda'
 
-model = None
-tokenizer = None
 
 role_dict = {
         'user': '问',
         'assistant': '答'
     }
 
-def init_model(llm_config=setting['llm']['glm26b']):
+def init_model(llm_config=setting['llm']['glm']):
 
     global model, tokenizer, defult_device
     model_path = llm_config['model_path']
@@ -29,12 +28,9 @@ def init_model(llm_config=setting['llm']['glm26b']):
 
 
     precision = llm_config['precision']
-    print('【model_path】', model_path)
 
-    tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path=model_path,
+    tokenizer = AutoTokenizer.from_pretrained(model_path,
                                               trust_remote_code=True)
-    config = AutoConfig.from_pretrained(pretrained_model_name_or_path=model_path,
-                                        trust_remote_code=True)
 
     if lora_path != '':
         print('【加载微调模型】')
@@ -42,11 +38,9 @@ def init_model(llm_config=setting['llm']['glm26b']):
         with open(lora_path + '\\config.json', 'r', encoding='utf-8') as f:
             lora_setting = json.load(f)
         f.close()
-        config.pre_seq_len = lora_setting['pre_seq_len']
         # Evaluation
         # Loading extra state dict of prefix encoder
-        model = AutoModel.from_pretrained(pretrained_model_name_or_path=model_path,
-                                          config=config,
+        model = AutoModel.from_pretrained(model_path,
                                           trust_remote_code=True)
         prefix_state_dict = torch.load(os.path.join(lora_path, "pytorch_model.bin"))
 
@@ -57,8 +51,7 @@ def init_model(llm_config=setting['llm']['glm26b']):
         model.transformer.prefix_encoder.load_state_dict(new_prefix_state_dict)
     else:
         print('【加载原模型】')
-        model = AutoModel.from_pretrained(pretrained_model_name_or_path=model_path,
-                                          config=config,
+        model = AutoModel.from_pretrained(model_path,
                                           trust_remote_code=True)
 
         # 根据设备执行不同的操作
@@ -108,6 +101,24 @@ def init_model(llm_config=setting['llm']['glm26b']):
     return model, tokenizer
 
 
+def get_glm_history(history):
+    out_history = []
+    role_flag = 0
+    temp_his = []
+    for it in history:
+        if role_flag == 0 and it['role'] == 'user':
+            temp_his.append(it['content'])
+            role_flag = 1
+        elif role_flag == 1 and it['role'] == 'assistant':
+            temp_his.append(it['content'])
+            role_flag = 0
+        if len(temp_his) == 2:
+            out_history.append(temp_his)
+            temp_his = []
+
+    return out_history
+
+
 def get_chat(prompt,
              history=None,
              system=None,
@@ -121,55 +132,100 @@ def get_chat(prompt,
     if model is None:
         model, tokenizer = init_model()
 
-    inp_prompt = utils_prompt.get_chat_prompt(prompt, history, system, role_dict)
+    # inp_prompt = utils_prompt.get_chat_prompt(prompt, history, system, role_dict)
     # print('【当前模型输入】\n', inp_prompt)
-    inputs = tokenizer([inp_prompt], return_tensors="pt")
-    inputs = inputs.to(defult_device)
-    outputs = model.generate(**inputs,
+    # inputs = tokenizer([inp_prompt], return_tensors="pt")
+    # inputs = inputs.to(defult_device)
+    # outputs = model.generate(**inputs,
+    #                          max_length=max_length,
+    #                          top_p=top_p,
+    #                          temperature=temperature,
+    #                          num_beams=num_beams,
+    #                          do_sample=do_sample)
+    # outputs = outputs.tolist()[0][len(inputs["input_ids"][0]):]
+    # response = tokenizer.decode(outputs)
+    # response = model.process_response(response)
+
+    temp_history = []
+    if system is not None and len(system) > 0:
+        temp_history = [{'role': 'system', 'content': system}]
+
+    if history is not None and len(history) > 0:
+        if isinstance(history[0], dict):
+            temp_history.extend(history)
+        elif isinstance(history[0], list):
+            for item in history:
+                temp_history.append({'role': 'user', 'content': item[0]})
+                temp_history.append({'role': 'assistant', 'content': item[1]})
+
+
+
+    response, _ = model.chat(tokenizer=tokenizer,
+                             query=prompt,
+                             history=temp_history,
                              max_length=max_length,
                              top_p=top_p,
                              temperature=temperature,
                              num_beams=num_beams,
                              do_sample=do_sample)
-    outputs = outputs.tolist()[0][len(inputs["input_ids"][0]):]
-    response = tokenizer.decode(outputs)
-    response = model.process_response(response)
+
+
+
     # print('【当前模型输出】\n', response)
     # print('=============================')
     torch.cuda.empty_cache()
     return response
 
 
-def stream_chat(prompt,
-                history=None,
-                system=None,
-                max_length=2048,
-                top_p=1,
-                temperature=1,
-                num_beams=1,
-                do_sample=True):
+def get_stream_chat(prompt,
+                    history=None,
+                    system=None,
+                    max_length=2048,
+                    top_p=1,
+                    temperature=1,
+                    num_beams=1,
+                    do_sample=True):
     global model, tokenizer, defult_device
 
     if model is None:
         model, tokenizer = init_model()
 
-
-    inp_prompt = utils_prompt.get_chat_prompt(prompt, history, system, role_dict)
-
+    # inp_prompt = utils_prompt.get_chat_prompt(prompt, history, system, role_dict)
+    #
     # print('【inp_prompt】\n', inp_prompt)
+    #
+    # inputs = tokenizer([inp_prompt], return_tensors="pt")
+    # inputs = inputs.to(defult_device)
+    #
+    # for outputs in model.stream_generate(**inputs,
+    #                                      max_length=max_length,
+    #                                      top_p=top_p,
+    #                                      temperature=temperature,
+    #                                      num_beams=num_beams,
+    #                                      do_sample=do_sample):
+    #     outputs = outputs.tolist()[0][len(inputs["input_ids"][0]):]
+    #     response = tokenizer.decode(outputs)
+    #     response = model.process_response(response)
+    #     yield response
 
-    inputs = tokenizer([inp_prompt], return_tensors="pt")
-    inputs = inputs.to(defult_device)
+    temp_history = []
+    if system is not None and len(system) > 0:
+        temp_history = [{'role': 'system', 'content': system}]
 
-    for outputs in model.stream_generate(**inputs,
+    if history is not None and len(history) > 0:
+        if isinstance(history[0], dict):
+            temp_history.extend(history)
+        elif isinstance(history[0], list):
+            for item in history:
+                temp_history.append({'role': 'user', 'content': item[0]})
+                temp_history.append({'role': 'assistant', 'content': item[1]})
+
+    for response, _ in model.stream_chat(tokenizer=tokenizer,
+                                         query=prompt,
+                                         history=temp_history,
                                          max_length=max_length,
                                          top_p=top_p,
                                          temperature=temperature,
                                          num_beams=num_beams,
                                          do_sample=do_sample):
-        outputs = outputs.tolist()[0][len(inputs["input_ids"][0]):]
-        response = tokenizer.decode(outputs)
-        response = model.process_response(response)
         yield response
-
-

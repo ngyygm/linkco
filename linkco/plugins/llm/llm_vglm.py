@@ -8,7 +8,7 @@ defult_device = 'cuda'
 model = ''
 tokenizer = ''
 
-def init_model(llm_config=setting['llm']['vglm6b']):
+def init_model(llm_config=setting['llm']['vglm']):
     model_path = llm_config['model_path']
     lora_path = llm_config['lora_path']
     device = llm_config['device']
@@ -117,9 +117,9 @@ def get_chat(prompt,
         model, tokenizer = init_model()
 
     out_history = []
-    if len(system) > 0:
-        out_history.append(['system:\n{}'.format(system),
-                            ''])
+    if len(system) > 0 and system is not None:
+        out_history.append([system,
+                            '好的，我会遵循以上内容。'])
     role_flag = 0
     temp_his = []
     for it in history:

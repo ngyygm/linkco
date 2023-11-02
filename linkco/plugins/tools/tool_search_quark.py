@@ -9,9 +9,9 @@ import threading
 
 from ...main import base_path, headers_list
 
-from ..utils.utils_vector import create_vector_database, search_from_vector_database, load_vector_database
+from ..utils.utils_vector import create_vector_database, search_from_vector_database
 from ..utils.utils_data import get_remove_noun
-from ..utils.utils_chat import get_cut_history
+from ..utils.utils_chat import get_cut_history, get_relate_content
 from ..utils.utils_time import get_now_datetime
 from ..utils.utils_web import get_url_real_content
 from ..utils.utils_prompt import get_history_prompt, get_rule_prompt, get_example_prompt
@@ -23,7 +23,7 @@ requests.packages.urllib3.disable_warnings()
 quark_data_save_path = base_path + 'quark_search/'
 
 db_name = 'quark_db'
-min_score = 400
+min_score = 700
 
 # 伪装浏览器请求头
 headers = {
@@ -116,7 +116,7 @@ class Tool():
                      if_query=True,
                      model_nickname=None):
 
-        prompts = [prompt]
+        querys = [prompt]
 
         if not if_query:
             # 如果当前传入的内容是一段聊天，需要二次提取问题，则进行问题提取
@@ -132,7 +132,7 @@ class Tool():
                          '每个问题都要求信息完整，内容明确'
                          ]
 
-            temp_history.append({'role': 'data', 'content': '当前时间:{}'.format(get_now_datetime())})
+            temp_history.append({'role': 'observation', 'content': '当前时间:{}'.format(get_now_datetime())})
             role_dict = {
                 'user': '问',
                 'assistant': '答'
@@ -160,7 +160,7 @@ class Tool():
                     response = get_chat(prompt=temp_prompt,
                                         model_nickname=model_nickname)
                     response = eval(response)
-                    prompts = response['问题']
+                    querys = response['问题']
                     break
                 except Exception as e:
                     print(e)
@@ -168,134 +168,137 @@ class Tool():
                     time.sleep(wait_time)
 
         out_results = ''
-        for prompt_item in prompts[:3]:
-            # print('【相似度搜问题】', prompt_item)
-            response_d = []
-            try:
-                response_d = search_from_vector_database(db_name, prompt_item, out_count, min_score)
-            except Exception as e:
-                print(e)
-            if len(response_d) == 0:
-                dict_url = {
-                    'from': 'kkframenew',
-                    'predict': '1',
-                    'search_id': 'AAPBzJ1CaZFx2dd3XIbnp6R%2FLWvCQv98%2BoR2I9e5pWcKAg%3D%3D_1683739677820',
-                    'round_id': '-1',
-                    'pdtt': '1683739678',
-                    'uc_param_str': 'dnntnwvepffrbijbprsvchgputdemennosstodcaaapcgidsdieini',
-                    'q': prompt_item,
-                    'hid': 'baab53e0a589438df41d09c0f3d7e28e',
-                    'extra_params': 'AAMplgqv4M50rgwSUug44KAhyR0xzLyTyYJmt4JFwQQ7zA%3D%3D',
-                    'qshare_entry': 'clipboard'
-                }
-                url = 'https://quark.sm.cn/s?'
-                for item in dict_url.keys():
-                    url += item + '={}&'.format(dict_url[item])
-                url = url[:-1]
-                temp_headers = random.sample(headers_list, 1)[0]
-                headers['user-agent'] = temp_headers['user-agent']
+        temp_response_d = []
+        for query_item in querys[:3]:
+            # response_d = search_from_vector_database(db_name, query_item, out_count, min_score)
+            # if len(response_d) == 0:
+            print('【quark搜索当前问题】', query_item)
+            dict_url = {
+                'from': 'kkframenew',
+                'predict': '1',
+                'search_id': 'AAPBzJ1CaZFx2dd3XIbnp6R%2FLWvCQv98%2BoR2I9e5pWcKAg%3D%3D_1683739677820',
+                'round_id': '-1',
+                'pdtt': '1683739678',
+                'uc_param_str': 'dnntnwvepffrbijbprsvchgputdemennosstodcaaapcgidsdieini',
+                'q': query_item,
+                'hid': 'baab53e0a589438df41d09c0f3d7e28e',
+                'extra_params': 'AAMplgqv4M50rgwSUug44KAhyR0xzLyTyYJmt4JFwQQ7zA%3D%3D',
+                'qshare_entry': 'clipboard'
+            }
+            url = 'https://quark.sm.cn/s?'
+            for item in dict_url.keys():
+                url += item + '={}&'.format(dict_url[item])
+            url = url[:-1]
+            temp_headers = random.sample(headers_list, 1)[0]
+            headers['user-agent'] = temp_headers['user-agent']
+            r = requests.get(url,
+                             headers=headers,
+                             timeout=wait_time,
+                             verify=False)
+            html = r.text
+            soup = BeautifulSoup(html, 'html.parser')
+            result_list = []
+            result_list.extend(soup.find_all(class_='c-container'))
+            result_list.extend(soup.find_all(class_='c-theme-olympic c-theme-quark'))
+            result_list.extend(soup.find_all(class_='c-flex c-flex-bottom'))
 
-                html = ''
-                count = 5
-                while count > 0:
-                    try:
-                        r = requests.get(url,
-                                         headers=headers,
-                                         timeout=wait_time,
-                                         verify=False)
-                        break
-                    except Exception as e:
-                        print(e)
-                        count = count - 1
-                        time.sleep(wait_time)
+            global out_data, lock
+            out_data = []
 
-                html = r.text
-                soup = BeautifulSoup(html, 'html.parser')
-                result_list = []
-                result_list.extend(soup.find_all(class_='c-container'))
-                result_list.extend(soup.find_all(class_='c-theme-olympic c-theme-quark'))
-                result_list.extend(soup.find_all(class_='c-flex c-flex-bottom'))
+            thread_list = []
+            thread_num = 8
+            lock = threading.Lock()
 
-                global out_data, lock
-                out_data = []
+            content_datas_list = []
+            for i in range(thread_num):
+                content_datas_list.append(result_list[int((i) * (len(result_list) / thread_num)): int(
+                    (i + 1) * (len(result_list) / thread_num))])
 
-                thread_list = []
-                thread_num = 8
-                lock = threading.Lock()
+            for i in range(thread_num):
+                thread = threading.Thread(target=run, args=[i, content_datas_list[i]])
 
-                content_datas_list = []
-                for i in range(thread_num):
-                    content_datas_list.append(result_list[int((i) * (len(result_list) / thread_num)): int(
-                        (i + 1) * (len(result_list) / thread_num))])
+                thread.start()
+                thread_list.append(thread)
 
-                for i in range(thread_num):
-                    thread = threading.Thread(target=run, args=[i, content_datas_list[i]])
+            for t in thread_list:
+                t.join()
 
-                    thread.start()
-                    thread_list.append(thread)
+            weibo_list = []
+            weibo_list.extend(soup.find_all(class_='M_Other_Weibo_strong_Dilu_weibo_strong'))
+            for weibo in weibo_list:
+                temp_data = {}
+                url_list = weibo.find_all(
+                    class_='c-paragraph--v1_0_0 c-flex c-flex-center-y c-font-darkest c-font-m c-font-normal c-margin-top-s c-weibo-expression c-font-l')
+                url_list = [it['href'] for it in url_list]
 
-                for t in thread_list:
-                    t.join()
+                dice_list = weibo.find_all(class_='js-c-paragraph-text')
+                dice_list = [it.text for it in dice_list]
 
-                weibo_list = []
-                weibo_list.extend(soup.find_all(class_='M_Other_Weibo_strong_Dilu_weibo_strong'))
-                for weibo in weibo_list:
-                    temp_data = {}
-                    url_list = weibo.find_all(
-                        class_='c-paragraph--v1_0_0 c-flex c-flex-center-y c-font-darkest c-font-m c-font-normal c-margin-top-s c-weibo-expression c-font-l')
-                    url_list = [it['href'] for it in url_list]
+                for i in range(len(dice_list)):
+                    temp_content = dice_list[i]
+                    title = '【来源微博】:{}'.format(temp_content[:16])
+                    real_url = ''
+                    if i < len(url_list) - 1:
+                        real_url = url_list[i]
+                    temp_data['title'] = "[" + title + "](" + real_url + ")"
+                    temp_data['content'] = temp_content
+                    out_data.append(temp_data)
 
-                    dice_list = weibo.find_all(class_='js-c-paragraph-text')
-                    dice_list = [it.text for it in dice_list]
+            # 这里会创建一个文件夹quark_search，用来保存所有搜索到的数据
+            if not os.path.exists(quark_data_save_path):
+                os.makedirs(quark_data_save_path)
+            # 保存数据
+            file_list = []
+            for it in out_data:
+                if '(http' in it['title']:
+                    temp_title = it['title'].split('(http')[0]
+                else:
+                    temp_title = it['title']
+                temp_title = get_remove_noun(temp_title)
+                save_path = quark_data_save_path + temp_title
+                if os.path.exists(save_path):
+                    with open(save_path, 'r', encoding='utf-8') as f:
+                        temp_data = f.read()
+                    f.close()
+                    temp_content = it['content'].split('\n')
+                    for it_content in temp_content:
+                        if it_content not in temp_data:
+                            with open(save_path, 'a', encoding='utf-8') as f:
+                                f.write('\n' + it_content)
+                            f.close()
+                else:
+                    with open(save_path, 'w', encoding='utf-8') as f:
+                        f.write(it['content'])
+                    f.close()
+                file_list.append(save_path)
 
-                    for i in range(len(dice_list)):
-                        temp_content = dice_list[i]
-                        title = '【来源微博】:{}'.format(temp_content[:16])
-                        real_url = ''
-                        if i < len(url_list) - 1:
-                            real_url = url_list[i]
-                        temp_data['title'] = "[" + title + "](" + real_url + ")"
-                        temp_data['content'] = temp_content
-                        out_data.append(temp_data)
+            # 把下载来的数据，保存到向量数据库中
+            temp_data = create_vector_database(file_list, split_len=1024)
 
-                # print('【out_data】', len(out_data))
-                # 这里会创建一个文件夹quark_search，用来保存所有搜索到的数据
-                if not os.path.exists(quark_data_save_path):
-                    os.makedirs(quark_data_save_path)
-                # 保存数据
-                file_list = []
-                for it in out_data:
-                    if '(http' in it['title']:
-                        temp_title = it['title'].split('(http')[0]
-                    else:
-                        temp_title = it['title']
-                    temp_title = get_remove_noun(temp_title)
-                    save_path = quark_data_save_path + temp_title
-                    if os.path.exists(save_path):
-                        with open(save_path, 'r', encoding='utf-8') as f:
-                            temp_data = f.read()
-                        f.close()
-                        temp_content = it['content'].split('\n')
-                        for it_content in temp_content:
-                            if it_content not in temp_data:
-                                with open(save_path, 'a', encoding='utf-8') as f:
-                                    f.write('\n' + it_content)
-                                f.close()
-                    else:
-                        with open(save_path, 'w', encoding='utf-8') as f:
-                            f.write(it['content'])
-                        f.close()
-                    file_list.append(save_path)
+            # 判断检索到的知识是否与当前问题相关
+            response_d = search_from_vector_database(temp_data, query_item, out_count, min_score)
+            print('【相似度搜问题】', query_item)
 
-                # 把下载来的数据，保存到向量数据库中
-                create_vector_database(db_name, file_list, split_len=768)
-
-                # 判断检索到的知识是否与当前问题相关
-                response_d = search_from_vector_database(db_name, prompt_item, out_count, min_score+100)
-
-            # for item in response_d:
-            #     print('{}\t{}'.format(item['score'], item['content'][:128].replace('\n', '')))
-            results = ''.join([re.sub('\n', '', it['content']) for it in response_d])
-            out_results += '{}\n{}\n\n'.format(prompt_item, results[:news_len])
+            for item in response_d:
+                if if_query:
+                    relate_query = prompt
+                else:
+                    relate_query = query_item
+                # if get_relate_content(item['content'], relate_query, model_nickname):
+                #     print('【相关性判断】 Yes')
+                #     temp_json = {}
+                #     temp_json['问题'] = relate_query
+                #     temp_json['正文'] = item['content'][:1024]
+                #     temp_response_d.append(temp_json)
+                # else:
+                #     print('【相关性判断】 No')
+                temp_json = {}
+                temp_json['问题'] = relate_query
+                temp_json['正文'] = item['content'][:1024]
+                temp_response_d.append(temp_json)
+                print('{}\t{}'.format(item['score'], item['content'].replace('\n', '')))
+                print('----------------------------')
+        out_results = json.dumps(temp_response_d, ensure_ascii=False, indent=2)
+        # out_results += '{}\n{}\n\n'.format(prompt_item, results[:news_len])
 
         return out_results

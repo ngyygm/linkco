@@ -183,7 +183,7 @@ def merge_database(database0: dict, database1: dict):
 
 # 创建数据库
 def create_vector_database(source_folder: str or list,
-                           database_path: str,
+                           database_path: str = None,
                            split_len: int = 512):
     # print('【source_folder】', source_folder)
     vector = get_text_to_vector('test')
@@ -237,6 +237,7 @@ def create_vector_database(source_folder: str or list,
         }
 
         database = add_vector(database, temp_vector_dbs)
-        save_vector_to_database(database, database_path)
+        if database_path is not None and len(database_path) > 0:
+            save_vector_to_database(database, database_path)
     return database
 

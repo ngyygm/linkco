@@ -1,3 +1,4 @@
+import re
 import json
 import time
 import requests
@@ -116,35 +117,50 @@ class Tool():
             temp_history = [it for it in get_cut_history(history, 256, 3)]
         else:
             temp_history = []
-        example_data = {'城市': '北京', '时间': ['2000-01-02']}
+        example_data = {'城市': '填写城市名字', '时间': ['2000-01-02']}
 
-        rule_list = ['根据当前提问和历史对话，提取需要查询的城市名称和时间',
+        rule_list = ['根据当前输入，提取需要查询的城市名称和时间',
                      '城市只有一个',
                      '日期可能有多个，都要写出来']
 
-        temp_history.append({'role': 'data', 'content': '当前时间:{}'.format(get_now_datetime())})
+        # temp_history.append({'role': 'observation', 'content': '当前时间:{}'.format(get_now_datetime())})
         role_dict = {
             'user': '问',
             'assistant': '答'
         }
-        history_prompt = get_history_prompt(temp_history, role_dict)
-        rule_prompt = get_rule_prompt(rule_list)
-        example_prompt = get_example_prompt(json.dumps(example_data, ensure_ascii=False))
 
-        temp_prompt = '历史对话:\n{}\n当前提问:{}\n\n要求:\n{}\n示例:\n{}'.format(history_prompt, prompt, rule_prompt, example_prompt)
+        rule_prompt = get_rule_prompt(rule_list)
+        example_prompt = get_example_prompt(json.dumps(example_data, ensure_ascii=False, indent=2))
+
+        system_prompt = '要求:\n{}\n示例:\n```\n{}\n```'.format(rule_prompt, example_prompt)
+
 
 
         count = 5
         while count > 0:
             try:
-                response = get_chat(prompt=temp_prompt,
+                print('【天气搜索】')
+                print('【prompt】', prompt)
+                print('【system_prompt】', system_prompt)
+                print('【temp_history】', temp_history)
+                response = get_chat(prompt=prompt + '\n当前时间:{}'.format(get_now_datetime()),
+                                    system=system_prompt,
+                                    history=temp_history,
                                     model_nickname=model_nickname)
+                print('【response】', response)
+                if "```" in response:
+                    response = response.replace("```python", "```")
+                    pattern = r"```(.*?)```"
+                    response = re.findall(pattern, response, re.DOTALL)[0]
                 response_eval = eval(response)
                 if model_nickname in ['giiso', 'openai']:
-                    save_data(response, temp_prompt, save_path='linkco_data/date_weather.json')
+                    save_data(response, prompt, save_path='linkco_data/date_weather.json')
                 if response_eval != example_data:
                     city_name = response_eval["城市"]
                     time_list = response_eval["时间"]
+                    print('【城市】', city_name)
+                    print('【时间】', time_list)
+
                     city_url = self.search_city(city_name)
                     weather = self.parse(city_url)
 
@@ -161,8 +177,19 @@ class Tool():
                                                                                         f['high_temperature'],
                                                                                         f['low_temperature'])
                     return result + '\n当前时间: {}'.format(get_now_datetime(format='%Y-%m-%d %H:%M:%S'))
-                else:
-                    return '没找到相关地区的天气'
+
+
+                    #
+                    # key_selection = {
+                    #     "current_condition": ["temp_C", "FeelsLikeC", "humidity", "weatherDesc", "observation_time"],
+                    # }
+                    # resp = requests.get(f"https://wttr.in/{city_name}?format=j1")
+                    # resp.raise_for_status()
+                    # resp = resp.json()
+                    # ret = {k: {_v: resp[k][0][_v] for _v in v} for k, v in key_selection.items()}
+                    # print('【ret】', ret)
+                    # return json.dumps(ret, ensure_ascii=False, indent=2)
+
             except Exception as e:
                 print(e)
                 count = count - 1

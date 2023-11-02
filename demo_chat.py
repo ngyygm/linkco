@@ -4,13 +4,13 @@ if __name__ == '__main__':
 
     # 这里可以设定每次创建的模型参数，具体模型有什么参数值，可以看config.json
     # model_config = {
-    #     "apikey": ""
+    #     "api_key": ""
     # }
 
     # 初始化使用的大模型
     # model_name 是当前要创建模型的类型名称，就是config.json里面的llm下的各个子类
     # model_nickname 是当前模型的别称，可以取任何名字，调用的时候用来指定
-    linkco.init_llm_model(model_name='glm6b',
+    linkco.init_llm_model(model_name='glm',
                           # model_config=model_config,
                           model_nickname='哈哈哈')
 

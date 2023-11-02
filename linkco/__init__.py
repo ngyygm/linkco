@@ -20,7 +20,11 @@ from .function.drones import (
     func_drones_CommandControl,
 )
 
-from .plugins.llm.main import init_llm_model, get_chat
+from .plugins.llm.main import (
+    init_llm_model,
+    get_chat,
+    get_stream_chat
+)
 
 from .plugins.tools.main import get_tool_dict, get_switch_tool
 from .plugins.tools import (

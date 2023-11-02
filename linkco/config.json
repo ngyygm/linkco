@@ -5,46 +5,33 @@
       "apikey": "",
       "image": false
     },
-    "vglm6b": {
-      "name": "vglm6b",
-      "model_path": "local_model\\visualglm-6b",
+    "vglm": {
+      "name": "vglm",
+      "model_path": "THUDM/visualglm-6b",
       "lora_path": "",
       "device": "cuda",
       "precision": "fp16",
       "image": true
     },
-    "glm6b": {
-      "name": "glm6b",
-      "model_path": "local_model\\chatglm-6b",
+    "glm": {
+      "name": "glm",
+      "model_path": "THUDM/chatglm3-6b",
       "lora_path": "",
       "device": "cuda",
       "precision": "fp16",
-      "image": false
-    },
-    "glm26b": {
-      "name": "glm26b",
-      "model_path": "local_model\\chatglm2-6b",
-      "lora_path": "",
-      "device": "cuda",
-      "precision": "fp16",
-      "image": false
-    },
-    "giiso": {
-      "name": "giiso",
-      "apikey": "",
       "image": false
     }
   },
 
   "vector_model": {
     "name": "chinese-large",
-    "model_path": "local_model\\text2vec-large-chinese",
-    "device": "cpu"
+    "model_path": "GanymedeNil/text2vec-large-chinese",
+    "device": "cuda"
   },
 
   "v2t_model": {
     "whisper": {
-      "model_path": "local_model\\whisper\\large-v2.pt",
+      "model_path": "large-v2",
       "device": "cpu"
     }
   },
