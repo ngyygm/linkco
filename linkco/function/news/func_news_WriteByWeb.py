@@ -5,7 +5,7 @@ from ...plugins.tools import tool_search_quark
 # 获取回答
 def get_response(prompt, history=None, system=None):
     tool = tool_search_quark.Tool()
-    results = tool.get_response(prompt, history, system, out_count=3, news_len=768)
+    results = tool.get_response(prompt, history, system, out_count=3, news_len=512)
     print('【资料】\n', results)
     results = results[:1024]
     if len(results) > 0:
