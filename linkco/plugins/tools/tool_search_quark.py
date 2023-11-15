@@ -11,7 +11,7 @@ from ...main import base_path, headers_list
 
 from ..utils.utils_vector import create_vector_database, search_from_vector_database
 from ..utils.utils_data import get_remove_noun
-from ..utils.utils_chat import get_cut_history, get_relate_content
+from ..utils.utils_chat import get_cut_history
 from ..utils.utils_time import get_now_datetime
 from ..utils.utils_web import get_url_real_content
 from ..utils.utils_prompt import get_history_prompt, get_rule_prompt, get_example_prompt
