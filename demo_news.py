@@ -5,7 +5,15 @@ from function.news import func_news_WriteByDB, func_news_WriteByWeb
 # 基于网络搜索的新闻生成demo，只要输入一个标题即可
 if __name__ == '__main__':
     # 初始化使用的大模型
-    linkco.init_llm_model('glm')
+    linkco.init_llm_model(model_name='glm',
+                          model_config={
+                              "model_path": "THUDM/chatglm3-6b", # 模型的文件地址
+                              "lora_path": "", # 模型lora的本地文件地址
+                              "device": "cuda",
+                              "precision": "fp16",
+                          },
+                          # 这里可随意设置这个模型的别名，后面要调用这个模型，就以别名为基准
+                          model_nickname='呀哈哈')
 
     # 构建测试数据集
     history = []
@@ -16,14 +24,19 @@ if __name__ == '__main__':
         prompt = input('【问】\n')
 
         # 这个是用夸克网络搜索生成新闻
-        res = func_news_WriteByWeb.get_response(prompt, [], system)
+        res = func_news_WriteByWeb.get_response(prompt=prompt,
+                                                history=[],
+                                                system=system,
+                                                model_nickname='呀哈哈')
         print('【夸克网络搜索答】\n', res)
 
         # 这是用本地数据库
         database = linkco.load_vector_database('linkco_data/vector_database/news_db0')
         res = func_news_WriteByDB.get_response(prompt=prompt,
+                                               history=[],
                                                system=system,
-                                               database=database)
+                                               database=database,
+                                               model_nickname='呀哈哈')
 
         print('【本地数据库答】\n', res)
     # 中华田园猫崛起了

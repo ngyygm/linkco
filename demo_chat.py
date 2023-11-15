@@ -3,17 +3,19 @@ import linkco
 if __name__ == '__main__':
 
     # 这里可以设定每次创建的模型参数，具体模型有什么参数值，可以看config.json
-    # model_config = {
-    #     "api_key": "一般是openai模型，或者需要api_key才需要填"
-    #     "model_path": "模型的本地文件地址"
-    # }
 
     # 初始化使用的大模型
     # model_name 是当前要创建模型的类型名称，就是config.json里面的llm下的各个子类
     # model_nickname 是当前模型的别称，可以取任何名字，调用的时候用来指定
     linkco.init_llm_model(model_name='glm',
-                          # model_config=model_config,
-                          model_nickname='default_model')
+                          model_config={
+                              "model_path": "THUDM/chatglm3-6b", # 模型的文件地址
+                              "lora_path": "", # 模型lora的本地文件地址
+                              "device": "cuda",
+                              "precision": "fp16",
+                          },
+                          # 这里可随意设置这个模型的别名，后面要调用这个模型，就以别名为基准
+                          model_nickname='呀哈哈')
 
     # 历史聊天对话内容，用List表示
     history = [{"role": "user", "content": '你好'},
@@ -27,7 +29,7 @@ if __name__ == '__main__':
         history = history[-20:]
         prompt = input('【问】')
         # 当前实际的提问
-        res = linkco.get_chat(prompt, history, system, model_nickname='哈哈哈')
+        res = linkco.get_chat(prompt, history, system, model_nickname='呀哈哈')
         history.extend([{"role": "user", "content": prompt},
                         {"role": "assistant", "content": res}])
         print('【答】\n', res)
