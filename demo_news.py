@@ -1,16 +1,11 @@
 # -*- coding: utf-8 -*-
 import linkco
-import time
+from function.news import func_news_WriteByDB, func_news_WriteByWeb
 
 # 基于网络搜索的新闻生成demo，只要输入一个标题即可
 if __name__ == '__main__':
     # 初始化使用的大模型
-    linkco.init_llm_model('glm26b')
-
-    db_name = 'news_db'
-    db_path = 'linkco_data/vector_database'
-    print('【加载向量库】', db_name)
-    linkco.load_vector_database(db_name, db_path)
+    linkco.init_llm_model('glm')
 
     # 构建测试数据集
     history = []
@@ -21,14 +16,14 @@ if __name__ == '__main__':
         prompt = input('【问】\n')
 
         # 这个是用夸克网络搜索生成新闻
-        # res = linkco.func_news_WriteByWeb.get_response(prompt, [], system)
-        start = time.time()
+        res = func_news_WriteByWeb.get_response(prompt, [], system)
+        print('【夸克网络搜索答】\n', res)
+
         # 这是用本地数据库
-        res = linkco.func_news_WriteByDB.get_response(db_name=db_name,
-                                                      prompt=prompt,
-                                                      system=system)
-        print(time.time() - start)
-        print('【答】\n', res)
+        database = linkco.load_vector_database('linkco_data/vector_database/news_db0')
+        res = func_news_WriteByDB.get_response(prompt=prompt,
+                                               system=system,
+                                               database=database)
+
+        print('【本地数据库答】\n', res)
     # 中华田园猫崛起了
-    # 人工智能大会开幕
-    # 2023世界人工智能大会以“智联世界 元生无界”为主题,以“高端化、国际化、专业化、市场化、智能化”为特色,将集聚全球智能领域最具影响力的科学家和企业家,以及相关政府的领导人,围绕智能领域的
